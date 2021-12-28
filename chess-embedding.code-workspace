@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../chess-embedding-learning"
+		},
+		{
+			"path": "../chess-embedding-search"
+		}
+	],
+	"settings": {
+		"python.pythonPath": "/home/pafrank/anaconda3/envs/position-embedding/bin/python"
+	}
+}

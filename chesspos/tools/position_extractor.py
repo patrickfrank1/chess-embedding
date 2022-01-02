@@ -1,6 +1,7 @@
 import argparse
+from pyinstrument import Profiler
 
-from chesspos.preprocessing.pgn_extract import pgn_to_bitboard
+from chesspos.preprocessing.pgn_extract import pgn_to_encoding
 
 if __name__ == "__main__":
 
@@ -22,12 +23,16 @@ if __name__ == "__main__":
 
 	parser.add_argument('input', type=str, action="store", help='pgn file with input games')
 	parser.add_argument(
+		'--format', type=str, default="bitboard", action="store",
+		help='encoding format: bitboard(default)|tensor'
+	)
+	parser.add_argument(
 		'--save_position', type=str, action="store",
 		help='h5py file to store the encoded positions'
 	)
 	parser.add_argument(
 		'--tuples', type=bool, default=False, action="store",
-		help='Do you want to generate tuples as well? True|False(default)'
+		help='Do you want to generate tuples of positions: True|False(default)'
 	)
 	parser.add_argument(
 		'--save_tuples', type=str, action="store",
@@ -46,17 +51,28 @@ if __name__ == "__main__":
 	args = parser.parse_args()
 
 	print(f"Input file at: {args.input}")
+	print(f"Encoding format: {args.format}")
 	print(f"Filter options: {args.filter}")
 	print(f"Positions saved at: {args.save_position}")
 	print(f"Tuples generated: {args.tuples}")
 	print(f"Tuples saved at: {args.save_tuples}")
 	print(f"Chunksize: {args.chunksize}\n\n")
 
-	pgn_to_bitboard(
+	profiler = Profiler() # or Profiler(use_signal=False), see below
+	profiler.start()
+
+	pgn_to_encoding(
 		args.input,
+		format=args.format,
 		save_file=args.save_position,
 		generate_tuples=args.tuples,
 		tuple_file=args.save_tuples,
 		chunksize=args.chunksize,
 		game_filter=args.filter
 	)
+
+	profiler.stop()
+	print(profiler.output_text(unicode=True, color=True))
+
+
+	

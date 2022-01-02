@@ -5,10 +5,10 @@ import chess
 import chess.pgn
 
 from chesspos.utils.utils import correct_file_ending
-from chesspos.preprocessing.board_converter import board_to_bitboard
+from chesspos.preprocessing.board_converter import board_to_bitboard, board_to_tensor
 
 
-def pgn_to_bitboard(pgn_file, generate_tuples=False, save_file=None,
+def pgn_to_encoding(pgn_file, format="bitboard", generate_tuples=False, save_file=None,
 	tuple_file=None, chunksize=100000, game_filter=None):
 	game_list = []
 	game_id = []
@@ -19,17 +19,19 @@ def pgn_to_bitboard(pgn_file, generate_tuples=False, save_file=None,
 
 	with open(pgn_name, 'r') as f:
 		while True:
-			next_game = chess.pgn.read_game(f)
+			next_game = chess.pgn.read_headers(f)
 			game_index += 1
 
 			if next_game is not None and game_filter is not {} and \
-				filter_out(next_game.headers, game_filter):
+				filter_out(next_game, game_filter):
 				continue
+			elif next_game is not None:
+				next_game = chess.pgn.read_game(f)
 
 			if counter % chunksize == 0 or next_game is None:
 				print("")
 				if save_file is not None:
-					save_bb(game_list, game_id, save_file, dset_num=save_number)
+					save_encoding(game_list, game_id, save_file, dset_num=save_number)
 					print("Game positions saved.")
 				else:
 					raise ValueError("Save bitboard file path not provided.")
@@ -51,7 +53,7 @@ def pgn_to_bitboard(pgn_file, generate_tuples=False, save_file=None,
 					break # end of file, break the while True loop
 
 			else:
-				temp_game = game_bb(next_game, game_nr=counter)
+				temp_game = game_encoding(next_game, format, game_nr=counter)
 				if len(temp_game) > 0:
 					game_list.append(temp_game)
 					game_id.append(game_index)
@@ -84,7 +86,7 @@ def filter_out(header, game_filter):
 			pass
 	return out
 
-def game_bb(game, game_nr=0):
+def game_encoding(game, format, game_nr=0):
 
 	board = chess.Board()
 	pos = []
@@ -96,22 +98,31 @@ def game_bb(game, game_nr=0):
 			print(e)
 			return pos
 		else:
-			embedding = board_to_bitboard(board)
+			if format == "bitboard":
+				embedding = board_to_bitboard(board)
+			elif format == "tensor":
+				embedding = board_to_tensor(board)
+			else:
+				raise ValueError("Format not recognized.")
 			pos.append(embedding)
 	return pos
 
-def save_bb(game_list, game_id, file, dset_num=0):
+def save_encoding(game_list, game_id, file, dset_num=0):
 	fname = correct_file_ending(file, "h5")
 	position = []
 	gid = []
+	encoding_shape = None
 
 	for (i, game) in enumerate(game_list):
 		for pos in game:
+			if encoding_shape is None:
+				encoding_shape = pos.shape
+				print(f"encoding_shape: {encoding_shape}")
 			position.append(pos)
 			gid.append(game_id[i])
 
 	with h5py.File(fname, "a") as f:
-		data1 = f.create_dataset(f"position_{dset_num}", shape=(len(position), 773),
+		data1 = f.create_dataset(f"position_{dset_num}", shape=(len(position), *encoding_shape),
 			dtype=bool, compression="gzip", compression_opts=9)
 		data2 = f.create_dataset(f"game_id_{dset_num}", shape=(len(position),),
 			dtype=np.int, compression="gzip", compression_opts=9)
@@ -144,9 +155,11 @@ def tuple_generator(game_list):
 
 def save_tuples(tuples, file, dset_num=0):
 	fname = correct_file_ending(file, "h5")
+	encoding_shape = tuples[0].shape
+	print(f"save_tuples encoding_shape: {encoding_shape}")
 
 	with h5py.File(fname, "a") as f:
-		data1 = f.create_dataset(f"tuples_{dset_num}", shape=(len(tuples), 15, 773),
+		data1 = f.create_dataset(f"tuples_{dset_num}", shape=(len(tuples), *encoding_shape),
 			dtype=bool, compression="gzip", compression_opts=9)
 
 		data1[:] = tuples[:]

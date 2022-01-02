@@ -44,4 +44,4 @@ def test_full_tensor_conversion():
 
 if __name__ == "__main__":
 	test_full_bitboard_conversion()
-	#test_full_tensor_conversion()
+	test_full_tensor_conversion()

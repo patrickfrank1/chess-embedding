@@ -3,7 +3,7 @@ import numpy as np
 import h5py
 
 from chesspos.utils.utils import correct_file_ending, files_from_directory
-from chesspos.preprocessing.bitboard_preprocessor import easy_triplets, semihard_triplets, hard_triplets, singlets
+from chesspos.preprocessing.board_preprocessor import easy_triplets, semihard_triplets, hard_triplets, singlets
 
 
 

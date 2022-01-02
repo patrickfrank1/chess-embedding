@@ -8,7 +8,7 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import callbacks
 
-from chesspos.preprocessing.board_bitboard_converter import bitboard_to_board, board_to_bitboard
+from chesspos.preprocessing.board_converter import bitboard_to_board, board_to_bitboard
 
 class ChesspositionInspectableAutoencoderMixin():
 	"""

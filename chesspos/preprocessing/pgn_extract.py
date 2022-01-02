@@ -5,7 +5,7 @@ import chess
 import chess.pgn
 
 from chesspos.utils.utils import correct_file_ending
-from chesspos.preprocessing.board_bitboard_converter import board_to_bitboard
+from chesspos.preprocessing.board_converter import board_to_bitboard
 
 
 def pgn_to_bitboard(pgn_file, generate_tuples=False, save_file=None,

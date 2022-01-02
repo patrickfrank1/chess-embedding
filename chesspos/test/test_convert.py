@@ -1,7 +1,7 @@
 import numpy as np
 import chess
 
-from chesspos.preprocessing.board_bitboard_converter import board_to_bitboard, bitboard_to_board
+from chesspos.preprocessing.board_converter import board_to_bitboard, bitboard_to_board
 
 start_board = chess.Board(chess.STARTING_FEN)
 start_bb = np.load("./chesspos/test/startpos.npy")

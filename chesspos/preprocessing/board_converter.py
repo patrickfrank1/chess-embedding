@@ -20,6 +20,8 @@ def board_to_bitboard(board):
 	return embedding
 
 def bitboard_to_board(bb):
+	assert bb.shape == (773,)
+
 	# set up empty board
 	reconstructed_board = chess.Board()
 	reconstructed_board.clear()
@@ -28,25 +30,20 @@ def bitboard_to_board(bb):
 		for i in range(1, 7): # P N B R Q K
 			idx = (1-color)*6 + i - 1
 			piece = chess.Piece(i,color)
-
 			bitmask = bb[idx*64:(idx+1)*64]
-			squares = np.argwhere(bitmask)
-			squares = [square for sublist in squares for square in sublist] # flatten list of lists
-
+			squares = np.flatnonzero(bitmask)
 			for square in squares:
 				reconstructed_board.set_piece_at(square,piece)
-	# set global board information
+
+	# set turn
 	reconstructed_board.turn = bb[768]
 
+	# set castling rights 
 	castling_rights = ''
-	if bb[770]: # castling_h1
-		castling_rights += 'K'
-	if bb[769]: # castling_a1
-		castling_rights += 'Q'
-	if bb[772]: # castling_h8
-		castling_rights += 'k'
-	if bb[771]: # castling_a8
-		castling_rights += 'q'
+	if bb[769]: castling_rights += 'Q'
+	if bb[770]: castling_rights += 'K'
+	if bb[771]: castling_rights += 'q'
+	if bb[772]: castling_rights += 'k'
 	reconstructed_board.set_castling_fen(castling_rights)
 
 	return reconstructed_board

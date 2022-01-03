@@ -65,7 +65,7 @@ class TrainableModel(SaveableModel):
 							save_weights_only=False, save_best_only=True, mode='min', verbose=1)
 						)
 					else:
-						print(f"WARNING: illegal arguent {callback} in tf_callbacks, skipping.")
+						print(f"WARNING: illegal argument {callback} in tf_callbacks, skipping.")
 		else:
 			raise ValueError("'callback_array' needs to be a list.")
 
@@ -123,6 +123,8 @@ class TrainableModel(SaveableModel):
 
 		train_generator = self.train_generator.get_generator()
 		test_generator = self.test_generator.get_generator()
+		print(train_generator)
+		print(test_generator)
 
 		self._check_train_test_ratio()
 

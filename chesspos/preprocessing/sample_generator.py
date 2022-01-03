@@ -1,6 +1,7 @@
 import os
-import numpy as np
 import h5py
+import numpy as np
+import tensorflow as tf
 
 from chesspos.utils.utils import correct_file_ending, files_from_directory
 from chesspos.preprocessing.board_preprocessor import easy_triplets, semihard_triplets, hard_triplets, singlets
@@ -60,7 +61,7 @@ class SampleGenerator():
 
 					for key in hf.keys():
 						if self.H5_COL_KEY in key:
-							new_tuples = np.asarray(hf[key][:], dtype=bool)
+							new_tuples = np.asarray(hf[key][:], dtype=np.float16)
 							new_tuples = new_tuples.reshape((*new_tuples.shape, 1))
 							tuples = np.concatenate((tuples, new_tuples))
 
@@ -68,7 +69,7 @@ class SampleGenerator():
 								if isinstance(self.subsampling_functions, (list, tuple, np.ndarray)):
 									for fn in self.subsampling_functions:
 										triplets = fn(tuples[:self.batch_size])
-										yield triplets
+										yield tf.constant(triplets, dtype=tf.float16)
 								else:
 									triplets = self.subsampling_functions(tuples[:self.batch_size])
 									yield triplets
@@ -76,7 +77,12 @@ class SampleGenerator():
 		self.generator = generator
 
 	def get_generator(self):
-		return self.generator()
+		return tf.data.Dataset.from_generator(
+			self.generator,
+			output_signature=(
+				tf.TensorSpec(shape=(self.batch_size, 8, 8, 15, 1), dtype=tf.float16)
+			)
+		)
 
 		
 	def number_samples(self):

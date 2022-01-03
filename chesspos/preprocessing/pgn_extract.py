@@ -57,7 +57,7 @@ def pgn_to_encoding(pgn_file, format="bitboard", generate_tuples=False, save_fil
 				if len(temp_game) > 0:
 					game_list.append(temp_game)
 					game_id.append(game_index)
-				print(f" Games parsed: {game_index} Games processed: {counter}", end="\r")
+				print(f" Games parsed: {game_index} Games processed: {counter+1}", end="\r")
 
 				counter += 1
 
@@ -117,7 +117,6 @@ def save_encoding(game_list, game_id, file, dset_num=0):
 		for pos in game:
 			if encoding_shape is None:
 				encoding_shape = pos.shape
-				print(f"encoding_shape: {encoding_shape}")
 			position.append(pos)
 			gid.append(game_id[i])
 
@@ -156,7 +155,6 @@ def tuple_generator(game_list):
 def save_tuples(tuples, file, dset_num=0):
 	fname = correct_file_ending(file, "h5")
 	encoding_shape = tuples[0].shape
-	print(f"save_tuples encoding_shape: {encoding_shape}")
 
 	with h5py.File(fname, "a") as f:
 		data1 = f.create_dataset(f"tuples_{dset_num}", shape=(len(tuples), *encoding_shape),

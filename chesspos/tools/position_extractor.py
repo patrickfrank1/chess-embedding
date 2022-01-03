@@ -1,5 +1,4 @@
 import argparse
-from pyinstrument import Profiler
 
 from chesspos.preprocessing.pgn_extract import pgn_to_encoding
 
@@ -22,6 +21,7 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser(description='Generate bitboards and training samples')
 
 	parser.add_argument('input', type=str, action="store", help='pgn file with input games')
+	parser.add_argument('--profile', type=bool, action="store", default=False, help='profile the code')
 	parser.add_argument(
 		'--format', type=str, default="bitboard", action="store",
 		help='encoding format: bitboard(default)|tensor'
@@ -58,21 +58,32 @@ if __name__ == "__main__":
 	print(f"Tuples saved at: {args.save_tuples}")
 	print(f"Chunksize: {args.chunksize}\n\n")
 
-	profiler = Profiler() # or Profiler(use_signal=False), see below
-	profiler.start()
+	if args.profile:
+		from pyinstrument import Profiler
 
-	pgn_to_encoding(
-		args.input,
-		format=args.format,
-		save_file=args.save_position,
-		generate_tuples=args.tuples,
-		tuple_file=args.save_tuples,
-		chunksize=args.chunksize,
-		game_filter=args.filter
-	)
+		profiler = Profiler() # or Profiler(use_signal=False), see below
+		profiler.start()
 
-	profiler.stop()
-	print(profiler.output_text(unicode=True, color=True))
+		pgn_to_encoding(
+			args.input,
+			format=args.format,
+			save_file=args.save_position,
+			generate_tuples=args.tuples,
+			tuple_file=args.save_tuples,
+			chunksize=args.chunksize,
+			game_filter=args.filter
+		)
 
+		profiler.stop()
+		print(profiler.output_text(unicode=True, color=True))
 
-	
+	else:
+		pgn_to_encoding(
+			args.input,
+			format=args.format,
+			save_file=args.save_position,
+			generate_tuples=args.tuples,
+			tuple_file=args.save_tuples,
+			chunksize=args.chunksize,
+			game_filter=args.filter
+		)

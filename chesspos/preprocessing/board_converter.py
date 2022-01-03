@@ -49,35 +49,32 @@ def bitboard_to_board(bb):
 	return reconstructed_board
 
 def board_to_tensor(board):
-	embedding = np.empty((8,8,0), dtype=bool)
+	embedding = np.empty((8,8,15), dtype=bool)
 	# one plane per piece
 	for color in [1, 0]:
 		for i in range(1, 7): # P N B R Q K / white
+			index = (1-color)*6 + i - 1
 			bmp = np.zeros(shape=(64,)).astype(bool)
 			for j in list(board.pieces(i, color)):
 				bmp[j] = True
-			bmp = bmp.reshape((8,8,1))
-			embedding = np.concatenate((embedding, bmp), axis=2)
+			bmp = bmp.reshape((8,8))
+			embedding[:,:, index] = bmp
 
 	# castling rights at plane embedding(:,:,12)
-	castling_rights = np.zeros((8,8,1), dtype=bool)
-	castling_rights[0,0,0] = board.has_queenside_castling_rights(chess.WHITE)
-	castling_rights[0,7,0] = board.has_kingside_castling_rights(chess.WHITE)
-	castling_rights[7,0,0] = board.has_queenside_castling_rights(chess.BLACK)
-	castling_rights[7,7,0] = board.has_kingside_castling_rights(chess.BLACK)
-	embedding = np.concatenate((embedding, castling_rights), axis=2)
+	embedding[0,0,12] = board.has_queenside_castling_rights(chess.WHITE)
+	embedding[0,7,12] = board.has_kingside_castling_rights(chess.WHITE)
+	embedding[7,0,12] = board.has_queenside_castling_rights(chess.BLACK)
+	embedding[7,7,12] = board.has_kingside_castling_rights(chess.BLACK)
 
 	# en passant squares at plane embedding(:,:,13)
 	en_passant = np.zeros((64,), dtype=bool)
 	if board.has_legal_en_passant():
 		en_passant[board.ep_square] = True
-	en_passant = en_passant.reshape((8,8,1))
-	embedding = np.concatenate((embedding, en_passant), axis=2)
+	en_passant = en_passant.reshape((8,8))
+	embedding[:,:,13] = en_passant
 
 	# turn at plane embedding(:,:,14)
-	turn = np.zeros((8,8,1), dtype=bool)
-	turn[0,0,0] = board.turn
-	embedding = np.concatenate((embedding, turn), axis=2)
+	embedding[0,0,14] = board.turn
 
 	return embedding
 

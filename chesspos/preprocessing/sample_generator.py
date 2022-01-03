@@ -11,10 +11,12 @@ class SampleGenerator():
 	def __init__(
 		self,
 		sample_dir,
+		format,
 		batch_size=16
 	):
 		self.H5_COL_KEY = 'tuples'
 		self.sample_dir = sample_dir
+		self.format = format
 		self.batch_size = batch_size
 
 		self.subsampling_functions = None
@@ -42,7 +44,14 @@ class SampleGenerator():
 	def construct_generator(self):
 		def generator():
 			sample_files = files_from_directory(os.path.abspath(self.sample_dir), file_type="h5")
-			tuples = np.empty(shape=(0, 15, 773), dtype=bool)
+			tuples = None
+
+			if self.format == "bitboard":
+				tuples = np.empty(shape=(0, 15, 773), dtype=bool)
+			elif self.format == "tensor":
+				tuples = np.empty(shape=(0, 15, 8, 8, 15, 1), dtype=bool)
+			else:
+				raise ValueError(f'{self.format} is not a valid format.')
 
 			for file in sample_files:
 				fname = correct_file_ending(file, 'h5')
@@ -52,6 +61,7 @@ class SampleGenerator():
 					for key in hf.keys():
 						if self.H5_COL_KEY in key:
 							new_tuples = np.asarray(hf[key][:], dtype=bool)
+							new_tuples = new_tuples.reshape((*new_tuples.shape, 1))
 							tuples = np.concatenate((tuples, new_tuples))
 
 							while len(tuples) >= self.batch_size:

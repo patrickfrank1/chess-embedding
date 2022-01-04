@@ -69,7 +69,7 @@ class SampleGenerator():
 								if isinstance(self.subsampling_functions, (list, tuple, np.ndarray)):
 									for fn in self.subsampling_functions:
 										triplets = fn(tuples[:self.batch_size])
-										yield tf.constant(triplets, dtype=tf.float16)
+										yield tf.constant(triplets, dtype=tf.float16),tf.constant(triplets, dtype=tf.float16)
 								else:
 									triplets = self.subsampling_functions(tuples[:self.batch_size])
 									yield triplets
@@ -80,6 +80,7 @@ class SampleGenerator():
 		return tf.data.Dataset.from_generator(
 			self.generator,
 			output_signature=(
+				tf.TensorSpec(shape=(self.batch_size, 8, 8, 15, 1), dtype=tf.float16),
 				tf.TensorSpec(shape=(self.batch_size, 8, 8, 15, 1), dtype=tf.float16)
 			)
 		)

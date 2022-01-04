@@ -63,7 +63,7 @@ def triplet_factory(indices):
 def singlet_factory(index):
 
 	def singlets(tuple_batch):
-		return (tuple_batch[:,index,:],tuple_batch[:,index,:]) # x, label
+		return tuple_batch[:,index,...] # only x, y not provided for autoencoder!
 
 	return singlets
 

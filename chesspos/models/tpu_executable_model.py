@@ -1,3 +1,5 @@
+import os
+import functools
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
@@ -5,6 +7,26 @@ from tensorflow.keras import layers
 
 from chesspos.models.trainable_model import TrainableModel
 from chesspos.models.chessposition_inspectable_autoencoder import ChesspositionInspectableAutoencoderMixin
+
+def use_tpu(func):
+	@functools.wraps(func)
+	def wrapper(*args, **kwargs):
+		try:
+			device_name = os.environ['COLAB_TPU_ADDR']
+			TPU_ADDRESS = 'grpc://' + device_name
+			print('Found TPU at: {}'.format(TPU_ADDRESS))
+
+			resolver = tf.distribute.cluster_resolver.TPUClusterResolver(TPU_ADDRESS)
+			tf.config.experimental_connect_to_cluster(resolver)
+			tf.tpu.experimental.initialize_tpu_system(resolver)
+			strategy = tf.distribute.TPUStrategy(resolver)
+
+			with strategy.scope():
+				func(*args, **kwargs)
+
+		except KeyError:
+			print('TPU not found')
+	return wrapper
 
 class TPUCnnResnetAutoencoder(TrainableModel): #, ChesspositionInspectableAutoencoderMixin):
 	def __init__(

@@ -1,5 +1,3 @@
-from re import T
-import numpy as np
 import chess
 
 from chesspos.preprocessing.board_converter import (

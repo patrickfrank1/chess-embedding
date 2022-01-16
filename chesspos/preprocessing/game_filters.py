@@ -2,6 +2,12 @@ import logging
 from typing import List
 import chess.pgn
 
+def get_game_filter(game_filter_name: str):
+	if game_filter_name == "filter_out_bullet_games":
+		return filter_out_bullet_games
+	else:
+		raise ValueError(f"Unknown game_filter_name: {game_filter_name}")
+
 def filter_out_bullet_games(header: chess.pgn.Headers, debug: bool = False):
 	return filter_by_elo(header, [700, 3000], [700, 3000], debug) and \
 		filter_by_time_control(header, [2, 30], debug)

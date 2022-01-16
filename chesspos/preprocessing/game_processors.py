@@ -7,6 +7,16 @@ import numpy as np
 
 from chesspos.preprocessing.board_converter import board_to_bitboard, board_to_tensor
 
+def get_game_processor(game_processor_name: str):
+	if game_processor_name == "positions_to_tensor":
+		return positions_to_tensor
+	elif game_processor_name == "positions_to_bitboard":
+		return positions_to_bitboard
+	elif game_processor_name == "positions_to_tensor_triplets":
+		return positions_to_tensor_triplets
+	else:
+		raise ValueError(f"Unknown game_processor_name: {game_processor_name}")
+
 def positions_to_tensor(game: chess.pgn.Game):
 	return single_positions(game, board_to_tensor, subsample_opening_positions)
 

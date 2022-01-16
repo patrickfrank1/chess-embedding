@@ -42,5 +42,5 @@ def single_positions(game: chess.pgn.Game, position_encoder: Callable[[chess.Boa
 	return output
 
 def subsample_opening_positions(ply: int):
-	selection_probability = max(ply / 40, 1.0)
+	selection_probability = min(ply / 40, 1.0)
 	return np.random.random() < selection_probability

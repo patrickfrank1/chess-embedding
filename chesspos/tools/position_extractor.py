@@ -1,6 +1,6 @@
 import argparse
 
-from chesspos.preprocessing.pgn_extract import pgn_to_encoding
+from chesspos.preprocessing.pgn_extractor import pgn_to_encoding
 
 if __name__ == "__main__":
 

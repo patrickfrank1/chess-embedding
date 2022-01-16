@@ -1,4 +1,4 @@
-from ctypes import Union
+import logging
 from typing import Callable, Union
 
 import chess
@@ -23,6 +23,7 @@ def positions_to_tensor_triplets(game: chess.pgn.Game):
 
 def single_positions(game: chess.pgn.Game, position_encoder: Callable[[chess.Board], np.ndarray],
 	sample_move: Callable[[Union[int,chess.Move, None]], bool]) -> np.ndarray:
+	logger = logging.getLogger(__name__)
 	output_shape = position_encoder(chess.Board()).shape
 	output_type = position_encoder(chess.Board()).dtype
 	output = np.empty((0, *output_shape), dtype=output_type)
@@ -32,13 +33,11 @@ def single_positions(game: chess.pgn.Game, position_encoder: Callable[[chess.Boa
 		try:
 			board.push(move)
 		except Exception as e:
-			print(f"Exception occurred in position number {i}: {e}")
+			logger.error(f"Exception occurred in position number {i}", exec_info=True)
 			return output
 
 		if sample_move(i):
 			output = np.append(output, position_encoder(board).reshape(1,*output_shape), axis=0)
-	
-	print(f"output dtype: {output.dtype}")
 	return output
 
 def subsample_opening_positions(ply: int):

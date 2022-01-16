@@ -1,3 +1,4 @@
+import logging
 from typing import List
 import chess.pgn
 
@@ -6,6 +7,7 @@ def filter_out_bullet_games(header: chess.pgn.Headers, debug: bool = False):
 		filter_by_time_control(header, [2, 30], debug)
 
 def filter_by_elo(header: chess.pgn.Headers, white_elo_range, black_elo_range, debug=False):
+	logger = logging.getLogger(__name__)
 	#headers are often non-standard, try..except!
 	discard_game = False
 	try:
@@ -15,12 +17,13 @@ def filter_by_elo(header: chess.pgn.Headers, white_elo_range, black_elo_range, d
 			discard_game = True
 	except Exception as e:
 		if debug:
-			print(f"Exception in filter_by_elo: {e}")
+			logger.error(f"Exception in filter_by_elo", exec_info=True)
 		discard_game = True
 	finally:
 		return discard_game
 
 def filter_by_time_control(header: chess.pgn.Headers, time_range: List[int], debug: bool = False):
+	logger = logging.getLogger(__name__)
 	#headers are often non-standard, try..except!
 	discard_game = False
 	try:
@@ -30,7 +33,7 @@ def filter_by_time_control(header: chess.pgn.Headers, time_range: List[int], deb
 			discard_game = True
 	except Exception as e:
 		if debug:
-			print(f"Exception in filter_by_time_control: {e}")
+			logger.error(f"Exception in filter_by_time_control", exec_info=True)
 		discard_game = True
 	finally:
 		return discard_game

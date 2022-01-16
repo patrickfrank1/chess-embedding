@@ -19,7 +19,8 @@ def positions_to_tensor_triplets(game: chess.pgn.Game):
 	anchor_index = np.random.randint(number_positions-1)
 	positive_index = anchor_index + 1
 	negative_index = (anchor_index + number_positions // 2) % number_positions
-	return position_encodings[[anchor_index, positive_index, negative_index],...]
+	triplets = position_encodings[[anchor_index, positive_index, negative_index],...]
+	return triplets.reshape(1, 3, *position_encodings.shape[1:])
 
 def single_positions(game: chess.pgn.Game, position_encoder: Callable[[chess.Board], np.ndarray],
 	sample_move: Callable[[Union[int,chess.Move, None]], bool]) -> np.ndarray:

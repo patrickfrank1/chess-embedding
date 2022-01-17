@@ -5,6 +5,8 @@ import chess.pgn
 def get_game_filter(game_filter_name: str):
 	if game_filter_name == "filter_out_bullet_games":
 		return filter_out_bullet_games
+	elif game_filter_name == "none":
+		return lambda header: False
 	else:
 		raise ValueError(f"Unknown game_filter_name: {game_filter_name}")
 

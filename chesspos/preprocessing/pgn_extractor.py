@@ -108,3 +108,10 @@ class PgnExtractor():
 			# Save chunk if it is full
 			if self._encoding_counter == self.chunk_size:
 				self._write_chunk_to_file(encoding_chunk, game_id)
+		
+		# Log file headers
+		fname = correct_file_ending(self.save_path, "h5")
+		with h5py.File(fname, 'r') as hf:
+			self._logger.info(f"Keys: {hf.keys()}")
+			self._logger.info(f"Shape of encoding: {hf['encoding_0'].shape}")
+			self._logger.info(f"Shape of game_id: {hf['game_id_0'].shape}")

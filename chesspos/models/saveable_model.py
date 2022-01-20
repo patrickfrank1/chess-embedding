@@ -1,15 +1,24 @@
+from abc import ABC, abstractmethod
+
 import tensorflow as tf
 from tensorflow import keras
 from keras.models import load_model, Model
 
-class SaveableModel():
-	def __init__(self,
-		save_dir: str,
-	) -> None:
+class SaveableModel(ABC):
+	def __init__(self, save_dir: str, *args, **kwargs) -> None:
 		self.save_dir = save_dir
+		self.model = self._define_model()
+		for arg in args:
+			print(f"Unknown argument: {arg} encountered and ignored for model instantiation.")
+		for key, value in kwargs.items():
+			print(f"Unknown argument: {key}={value} encountered and ignored for model instantiation.")
 
-		self.model: Model = None
+	@abstractmethod
+	def _define_model(self) -> Model:
+		pass
 
+	def get_model(self) -> Model:
+		return self.model
 
 	def save(self) -> None:
 		self.model.save(f"{self.save_dir}/model")

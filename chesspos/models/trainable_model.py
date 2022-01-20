@@ -1,45 +1,51 @@
 import os
 import math
 import pickle
+from typing import Callable, Dict, List
+import numpy as np
+import chess
 
 import tensorflow as tf
 from tensorflow import keras
 
 from chesspos.models.saveable_model import SaveableModel
+from chesspos.preprocessing.sample_generator import SampleGenerator
 
 class TrainableModel(SaveableModel):
 	def __init__(
 		self,
-		save_dir,
-		train_generator,
-		test_generator,
-		train_steps_per_epoch,
-		test_steps_per_epoch,
-		optimizer='rmsprop',
-		loss=None,
-		metrics=None,
-		hide_tf_warnings = False,
-		tf_callbacks = None
-	):
-		super().__init__(save_dir)
+		train_generator: SampleGenerator,
+		test_generator: SampleGenerator,
+		*args,
+		train_steps_per_epoch: int,
+		test_steps_per_epoch: int,
+		optimizer = 'rmsprop',
+		board_to_input: Callable[[chess.Board], np.ndarray] = None,
+		loss = None,
+		metrics = None,
+		hide_tf_warnings: bool = True,
+		tf_callbacks = None,
+		**kwargs
+	) -> None:
+		super().__init__(*args, **kwargs)
 
 		self.EXCESS_VALIDATION_EPOCHS = 10
 
-		self.optimizer = optimizer
-		self.loss = loss
-		self.metrics = metrics
+		self.board_to_input = kwargs.pop('board_to_input')
+		self.optimizer = kwargs.pop('optimizer')
+		self.loss = kwargs.pop('loss')
+		self.metrics = kwargs.pop('metrics')
 
-		self.save_dir = save_dir
 		self.train_generator = train_generator
 		self.test_generator = test_generator
 		self.train_steps_per_epoch = train_steps_per_epoch
 		self.test_steps_per_epoch = test_steps_per_epoch
-		self.hide_tf_warnings = hide_tf_warnings,
-		self.tf_callbacks = self._set_tf_callbacks(tf_callbacks)
+		self.hide_tf_warnings = kwargs.pop('hide_tf_warnings')
+		self.tf_callbacks = self._set_tf_callbacks(kwargs.pop('tf_callbacks') if 'tf_callbacks' in kwargs else None)
 		self.train_history = None
 
 
-	def _set_tf_callbacks(self, callback_array):
+	def _set_tf_callbacks(self, callback_array) -> List[keras.callbacks.Callback]:
 		callbacks = []
 		if callback_array is None:
 			pass
@@ -72,35 +78,29 @@ class TrainableModel(SaveableModel):
 		return callbacks
 
 
-	def _train_samples(self):
+	def _train_samples(self) -> int:
 		return  1.0 * self.train_generator.number_samples
 
 
-	def _test_samples(self):
+	def _test_samples(self) -> int:
 		return 1.0 * self.test_generator.number_samples
 
 
-	def _train_epochs(self):
+	def _train_epochs(self) -> int:
 		return self._train_samples() / self.train_generator.batch_size / self.train_steps_per_epoch
 
 
-	def _test_epochs(self):
+	def _test_epochs(self) -> int:
 		return self._test_samples() / self.test_generator.batch_size / self.test_steps_per_epoch
 
 
-	def get_model(self):
+	def get_model(self) -> keras.Model:
 		return self.model
 
 
-	def compile(self):
-		if self.model is None:
-			raise Exception("No model to compile.")
-
-		self.model.compile(
-			optimizer=self.optimizer,
-			loss=self.loss,
-			metrics=self.metrics
-		)
+	def _compile(self) -> None:
+		self.model.compile(optimizer=self.optimizer, loss=self.loss, metrics=self.metrics)
+		keras.utils.plot_model(self.model, to_file=f"{self.save_dir}/model.png", show_shapes=True)
 
 
 	def _check_train_test_ratio(self):
@@ -117,7 +117,7 @@ class TrainableModel(SaveableModel):
 				print("WARNING: your are providing much more validation samples than necessary. Those could be used for training instead.")
 
 
-	def train(self):
+	def train(self) -> Dict:
 		if self.hide_tf_warnings:
 			os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
@@ -138,18 +138,36 @@ class TrainableModel(SaveableModel):
 
 		return self.train_history
 
-	def predict(self, samples):
+	def predict(self, samples: np.ndarray) -> np.ndarray:
 		return self.model.predict(samples)
 
+	def _check_input_converter(self) -> None:
+		if self.board_to_input is None:
+			raise ValueError("No board to model input converter set.")
 
-	def save(self):
+		start_board = chess.Board()
+		converter_shape = self.board_to_input(start_board).shape[1:]
+		input_shape = self.train_generator.sample_shape
+		if not converter_shape == input_shape:
+			raise ValueError(f"board_to_input converter is not compatible with model input shape.\n"
+				f"Expected shape: {converter_shape}\n"
+				f"Input shape: {input_shape}")
+
+	def predict_from_board(self, boards: List[chess.Board]) -> np.ndarray:
+		self._check_input_converter()
+		inputs = np.empty((len(boards), *self.train_generator.sample_shape))
+		for i, board in enumerate(boards):
+			inputs[i] = self.board_to_input(board)
+		return self.predict(inputs)
+
+	def save(self) -> None:
 		super().save()
 
 		with open(f"{self.save_dir}/train_history.pkl", "wb") as file:
 			pickle.dump(self.train_history, file)
 
 
-	def load(self):
+	def load(self) -> None:
 		super().load()
 
 		with open(f"{self.save_dir}/train_history.pkl", "rb") as file:

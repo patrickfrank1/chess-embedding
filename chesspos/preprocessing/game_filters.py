@@ -1,18 +1,25 @@
 import logging
 from typing import List
+import chess
 import chess.pgn
 
 def get_game_filter(game_filter_name: str):
 	if game_filter_name == "filter_out_bullet_games":
 		return filter_out_bullet_games
+	elif game_filter_name == "filter_out_low_elo_bullet_games":
+		return filter_out_low_elo_bullet_games
 	elif game_filter_name == "none":
 		return lambda header: False
 	else:
 		raise ValueError(f"Unknown game_filter_name: {game_filter_name}")
 
 def filter_out_bullet_games(header: chess.pgn.Headers, debug: bool = False):
-	return filter_by_elo(header, [700, 3000], [700, 3000], debug) and \
-		filter_by_time_control(header, [2, 30], debug)
+	return filter_by_elo(header, white_elo_range=[700, 3000], black_elo_range=[700, 3000], debug=debug) and \
+		filter_by_time_control(header, time_range=[2, 30], debug=debug)
+
+def filter_out_low_elo_bullet_games(header: chess.pgn.Headers, debug: bool = False):
+	return filter_by_elo(header, white_elo_range=[2600, 4000], black_elo_range=[2600, 4000], debug=debug) and \
+		filter_by_time_control(header, time_range=[2, 30], debug=debug)
 
 def filter_by_elo(header: chess.pgn.Headers, white_elo_range, black_elo_range, debug=False):
 	logger = logging.getLogger(__name__)

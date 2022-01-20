@@ -14,8 +14,13 @@ def get_game_processor(game_processor_name: str):
 		return positions_to_bitboard
 	elif game_processor_name == "positions_to_tensor_triplets":
 		return positions_to_tensor_triplets
+	elif game_processor_name == "sparse_positions_to_tensor":
+		return sparse_positions_to_tensor
 	else:
 		raise ValueError(f"Unknown game_processor_name: {game_processor_name}")
+
+def sparse_positions_to_tensor(game: chess.pgn.Game):
+	return single_positions(game, board_to_tensor, heavy_subsampling)
 
 def positions_to_tensor(game: chess.pgn.Game):
 	return single_positions(game, board_to_tensor, subsample_opening_positions)
@@ -53,4 +58,8 @@ def single_positions(game: chess.pgn.Game, position_encoder: Callable[[chess.Boa
 
 def subsample_opening_positions(ply: int):
 	selection_probability = min(ply / 40, 1.0)
+	return np.random.random() < selection_probability
+
+def heavy_subsampling(ply: int):
+	selection_probability = subsample_opening_positions(ply) / 50.0
 	return np.random.random() < selection_probability

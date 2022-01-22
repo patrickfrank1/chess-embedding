@@ -1,7 +1,8 @@
+from functools import wraps
 import os
 import math
 import pickle
-from typing import Callable, Dict, List
+from typing import Callable, Dict, List, overload
 import numpy as np
 import chess
 
@@ -12,11 +13,11 @@ from chesspos.models.saveable_model import SaveableModel
 from chesspos.preprocessing.sample_generator import SampleGenerator
 
 class TrainableModel(SaveableModel):
+	@wraps(SaveableModel.__init__)
 	def __init__(
 		self,
 		train_generator: SampleGenerator,
 		test_generator: SampleGenerator,
-		*args,
 		train_steps_per_epoch: int,
 		test_steps_per_epoch: int,
 		optimizer = 'rmsprop',
@@ -27,23 +28,25 @@ class TrainableModel(SaveableModel):
 		tf_callbacks = None,
 		**kwargs
 	) -> None:
-		super().__init__(*args, **kwargs)
 
 		self.EXCESS_VALIDATION_EPOCHS = 10
 
-		self.board_to_input = kwargs.pop('board_to_input')
-		self.optimizer = kwargs.pop('optimizer')
-		self.loss = kwargs.pop('loss')
-		self.metrics = kwargs.pop('metrics')
+		self.board_to_input = board_to_input
+		self.optimizer = optimizer
+		self.loss = loss
+		self.metrics = metrics
 
 		self.train_generator = train_generator
 		self.test_generator = test_generator
 		self.train_steps_per_epoch = train_steps_per_epoch
 		self.test_steps_per_epoch = test_steps_per_epoch
-		self.hide_tf_warnings = kwargs.pop('hide_tf_warnings')
-		self.tf_callbacks = self._set_tf_callbacks(kwargs.pop('tf_callbacks') if 'tf_callbacks' in kwargs else None)
+		self.hide_tf_warnings = hide_tf_warnings
 		self.train_history = None
 
+		super(TrainableModel, self).__init__(**kwargs)
+
+		self.tf_callbacks = self._set_tf_callbacks(tf_callbacks)
+		print(self.loss)
 
 	def _set_tf_callbacks(self, callback_array) -> List[keras.callbacks.Callback]:
 		callbacks = []
@@ -74,7 +77,7 @@ class TrainableModel(SaveableModel):
 						print(f"WARNING: illegal argument {callback} in tf_callbacks, skipping.")
 		else:
 			raise ValueError("'callback_array' needs to be a list.")
-
+		
 		return callbacks
 
 
@@ -101,6 +104,7 @@ class TrainableModel(SaveableModel):
 	def _compile(self) -> None:
 		self.model.compile(optimizer=self.optimizer, loss=self.loss, metrics=self.metrics)
 		keras.utils.plot_model(self.model, to_file=f"{self.save_dir}/model.png", show_shapes=True)
+		self.model.summary()
 
 
 	def _check_train_test_ratio(self):
@@ -121,8 +125,10 @@ class TrainableModel(SaveableModel):
 		if self.hide_tf_warnings:
 			os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
-		train_generator = self.train_generator.get_generator()
-		test_generator = self.test_generator.get_generator()
+		#train_generator = self.train_generator.get_generator()
+		train_generator = self.train_generator.get_tf_dataset()
+		#test_generator = self.test_generator.get_generator()
+		test_generator = self.test_generator.get_tf_dataset()
 
 		self._check_train_test_ratio()
 
@@ -146,7 +152,7 @@ class TrainableModel(SaveableModel):
 			raise ValueError("No board to model input converter set.")
 
 		start_board = chess.Board()
-		converter_shape = self.board_to_input(start_board).shape[1:]
+		converter_shape = self.board_to_input(start_board).shape
 		input_shape = self.train_generator.sample_shape
 		if not converter_shape == input_shape:
 			raise ValueError(f"board_to_input converter is not compatible with model input shape.\n"
@@ -159,6 +165,16 @@ class TrainableModel(SaveableModel):
 		for i, board in enumerate(boards):
 			inputs[i] = self.board_to_input(board)
 		return self.predict(inputs)
+
+	def evaluate(self, samples: np.ndarray, labels: np.ndarray) -> np.float32:
+		return self.model.evaluate(samples, labels)
+
+	def evaluate_from_board(self, boards: List[chess.Board], labels) -> np.float32:
+		self._check_input_converter()
+		inputs = np.empty((len(boards), *self.train_generator.sample_shape))
+		for i, board in enumerate(boards):
+			inputs[i] = self.board_to_input(board)
+		return self.evaluate(inputs, labels)
 
 	def save(self) -> None:
 		super().save()

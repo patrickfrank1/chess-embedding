@@ -4,9 +4,8 @@ from tensorflow.keras import layers
 
 from chesspos.models.trainable_model import TrainableModel
 from chesspos.models.dense import DenseNetwork
-from chesspos.models.chessposition_inspectable_autoencoder import ChesspositionInspectableAutoencoderMixin
 
-class DenseAutoencoder(TrainableModel, ChesspositionInspectableAutoencoderMixin):
+class DenseAutoencoder(TrainableModel):
 	def __init__(
 		self,
 		input_size,

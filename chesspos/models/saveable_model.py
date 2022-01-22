@@ -5,11 +5,9 @@ from tensorflow import keras
 from keras.models import load_model, Model
 
 class SaveableModel(ABC):
-	def __init__(self, save_dir: str, *args, **kwargs) -> None:
+	def __init__(self, save_dir: str, **kwargs) -> None:
 		self.save_dir = save_dir
 		self.model = self._define_model()
-		for arg in args:
-			print(f"Unknown argument: {arg} encountered and ignored for model instantiation.")
 		for key, value in kwargs.items():
 			print(f"Unknown argument: {key}={value} encountered and ignored for model instantiation.")
 

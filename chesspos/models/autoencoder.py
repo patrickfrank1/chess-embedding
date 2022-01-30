@@ -59,6 +59,13 @@ class AutoencoderModel(TrainableModel):
 	def binarize_array(array, threshold=0.5):
 		return np.where(array > threshold, True, False)
 
+	@staticmethod
+	def print_board(board: chess.Board) -> None:
+		board = board.__str__().split("\n")
+		output = ""
+		output += ''.join([f"{board[i]}\n" for i in range(len(board))]) +'\n'
+		print(output)
+
 	def _check_output_converter(self) -> None:
 		if self.output_to_board is None:
 			raise ValueError("No model output to board converter set.")
@@ -82,10 +89,11 @@ class AutoencoderModel(TrainableModel):
 	def _get_sorted_losses(self, sort_fn: Callable, number_samples: int = 1000) -> List[dict]:
 		test_generator = self.test_generator.get_generator()
 		batch_size = self.test_generator.batch_size
+		batches = max(number_samples // batch_size, 1)
 		samples = []
 
-		for i in range(number_samples // batch_size):
-			x, y = next(test_generator)
+		for _ in range(batches):
+			x, __ = next(test_generator)
 			print(x.shape)
 			for j in range(batch_size):
 				input = x[j].reshape(1, *x[j].shape)
@@ -97,17 +105,30 @@ class AutoencoderModel(TrainableModel):
 
 		return samples
 
-	def get_best_samples(self, number_samples: int)-> List[dict]:
+	def plot_best_samples(self, number_samples: int)-> None:
 		max_loss = lambda x, y : x - y
-		return self._get_sorted_losses(max_loss, number_samples=10*number_samples)[:number_samples]
+		best_samples = self._get_sorted_losses(max_loss, number_samples=10*number_samples)[:number_samples]
+		examples_out = ""
+		print("Best reconstruction examples:")
+		for i in range(number_samples):
+			best_sample_input = best_samples[i]['input']
+			examples_out += str(best_samples[i]['loss']) + '\n\n'
+			examples_out += self._compare_input_to_prediction(best_sample_input)
+		print(examples_out)
 
-	def get_worst_samples(self, number_samples: int)-> List[dict]:
+	def plot_worst_samples(self, number_samples: int)-> None:
 		min_loss = lambda x, y : y - x
-		return self._get_sorted_losses(min_loss, number_samples=10*number_samples)[:number_samples]
+		worst_samples = self._get_sorted_losses(min_loss, number_samples=10*number_samples)[:number_samples]
+		examples_out = ""
+		print("Worst reconstruction examples:")
+		for i in range(number_samples):
+			worst_sample_input = worst_samples[i]['input']
+			examples_out += str(worst_samples[i]['loss']) + '\n'
+			examples_out += self._compare_input_to_prediction(worst_sample_input)
+		print(examples_out)
 
-	def compare_input_to_prediction(self, input: np.ndarray) -> None:
+	def _compare_input_to_prediction(self, input: np.ndarray) -> None:
 		prediction = self.model.predict(input)[0,:,:,:,0]
-		print(prediction.shape)
 		prediction = self.binarize_array(prediction)
 		prediction_board = self.output_to_board(prediction)
 		prediction_board = prediction_board.__str__().split("\n")
@@ -122,8 +143,19 @@ class AutoencoderModel(TrainableModel):
 		output_str += ''.join([f"{input_board[i]}    {prediction_board[i]}\n" for i in range(len(input_board))]) +'\n'
 		return output_str
 
-	def interpolate(self, sample1, sample2):
-		pass
+	def interpolate(self, sample1: np.ndarray, sample2: np.ndarray) -> None:
+		encoder = self.get_encoder()
+		decoder = self.get_decoder()
+		encoding1 = encoder.predict(sample1)
+		encoding2 = encoder.predict(sample2)
+		print(self.output_to_board(sample1[0,:,:,:,0]).__str__())
+		direction = encoding2 - encoding1
+		for i in range(11):
+			interpolation = decoder.predict(encoding1 + direction * i / 10.0)
+			prediction = interpolation[0,:,:,:,0]
+			prediction = self.binarize_array(prediction)
+			board = self.output_to_board(prediction)
+			print(board.__str__())
 
 	def interpolate2d(self, sample1, sample2, sample3, sample4):
 		pass

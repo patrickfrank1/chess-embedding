@@ -6,7 +6,7 @@ from tensorflow.keras import layers, Model
 
 from chesspos.models.autoencoder import AutoencoderModel
 
-class DenseAutoencoder(AutoencoderModel):
+class CnnAutoencoder(AutoencoderModel):
 	@wraps(AutoencoderModel.__init__)
 	def __init__(self, **kwargs):
 		self._final_conv_shape = None
@@ -15,17 +15,21 @@ class DenseAutoencoder(AutoencoderModel):
 
 	def _model_helper(self) -> dict:
 		encoder_input = layers.Input(shape=(8,8,15,1), dtype=tf.float16)
-		encoder = layers.Reshape((8*8*15,))(encoder_input)
-		encoder = layers.Dense(2*self.embedding_size, activation='relu')(encoder)
-		encoder = layers.Dense(self.embedding_size, activation='relu')(encoder)
 
-		decoder_input = layers.Input(shape=(self.embedding_size,))
-		decoder = layers.Dense(2*self.embedding_size, activation='relu')(decoder_input)
-		decoder = layers.Dense(8*8*15, activation='relu')(decoder_input)
-		decoder = layers.Reshape((8,8,15,1))(decoder)
+		# Encoder
+		x = layers.Conv3D(32, (3, 3, 15), activation="relu", padding="same")(encoder_input)
+		x = layers.MaxPooling3D((2, 2, 1), padding="same")(x)
+		x = layers.Conv3D(32, (3, 3, 15), activation="relu", padding="same")(x)
+		x = layers.MaxPooling3D((2, 2, 1), padding="same")(x)
 
-		encoder = keras.Model(inputs=encoder_input, outputs=encoder, name='encoder')
-		decoder = keras.Model(inputs=decoder_input, outputs=decoder, name='decoder')
+		# Decoder
+		decoder_input = layers.Input(shape=(2,2,15,32), dtype=tf.float16)
+		y = layers.Conv3DTranspose(32, (3, 3, 15), strides=(2,2,1), activation="relu", padding="same")(decoder_input)
+		y = layers.Conv3DTranspose(32, (3, 3, 15), strides=(2,2,1), activation="relu", padding="same")(y)
+		y = layers.Conv3D(1, (8, 8, 15), activation="sigmoid", padding="same")(y)
+
+		encoder = keras.Model(inputs=encoder_input, outputs=x, name='encoder')
+		decoder = keras.Model(inputs=decoder_input, outputs=y, name='decoder')
 		autoencoder = keras.Model(inputs=encoder_input, outputs=decoder(encoder(encoder_input)), name='autoencoder')
 
 		return {'encoder': encoder, 'decoder': decoder, 'autoencoder': autoencoder}

@@ -97,7 +97,7 @@ class AutoencoderModel(TrainableModel):
 			print(x.shape)
 			for j in range(batch_size):
 				input = x[j].reshape(1, *x[j].shape)
-				loss = self.model.evaluate(input)
+				loss = self.model.evaluate(input, input, verbose=0)
 				samples.append({'input':input, 'loss':loss})
 
 			sort_wrapper = lambda a, b: sort_fn(a['loss'], b['loss'])
@@ -128,12 +128,11 @@ class AutoencoderModel(TrainableModel):
 		print(examples_out)
 
 	def _compare_input_to_prediction(self, input: np.ndarray) -> None:
-		prediction = self.model.predict(input)[0,:,:,:,0]
-		prediction = self.binarize_array(prediction)
+		prediction = self.model.predict(input)
 		prediction_board = self.output_to_board(prediction)
 		prediction_board = prediction_board.__str__().split("\n")
 
-		input_board = self.output_to_board(input[0,:,:,:,0])
+		input_board = self.output_to_board(input)
 		input_board = input_board.__str__().split("\n")
 
 		for i in range(len(prediction_board)):
@@ -148,14 +147,13 @@ class AutoencoderModel(TrainableModel):
 		decoder = self.get_decoder()
 		encoding1 = encoder.predict(sample1)
 		encoding2 = encoder.predict(sample2)
-		print(self.output_to_board(sample1[0,:,:,:,0]).__str__())
+		print(self.output_to_board(sample1).__str__())
 		direction = encoding2 - encoding1
 		for i in range(11):
 			interpolation = decoder.predict(encoding1 + direction * i / 10.0)
-			prediction = interpolation[0,:,:,:,0]
-			prediction = self.binarize_array(prediction)
-			board = self.output_to_board(prediction)
+			board = self.output_to_board(interpolation)
 			print(board.__str__())
+			print("\n")
 
 	def interpolate2d(self, sample1, sample2, sample3, sample4):
 		pass

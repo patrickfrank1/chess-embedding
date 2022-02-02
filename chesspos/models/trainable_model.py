@@ -121,7 +121,7 @@ class TrainableModel(SaveableModel):
 			if test_epochs > self.EXCESS_VALIDATION_EPOCHS + train_epochs:
 				print("WARNING: your are providing much more validation samples than necessary. Those could be used for training instead.")
 
-	def _plot_train_history(self, history: keras.History) -> None:
+	def _plot_train_history(self, history: keras.callbacks.History) -> None:
 		# summarize history for loss
 		plt.plot(history.history['loss'])
 		plt.plot(history.history['val_loss'])
@@ -184,16 +184,3 @@ class TrainableModel(SaveableModel):
 		for i, board in enumerate(boards):
 			inputs[i] = self.board_to_input(board)
 		return self.evaluate(inputs, labels)
-
-	def save(self) -> None:
-		super().save()
-
-		with open(f"{self.save_dir}/train_history.pkl", "wb") as file:
-			pickle.dump(self.train_history, file)
-
-
-	def load(self) -> None:
-		super().load()
-
-		with open(f"{self.save_dir}/train_history.pkl", "rb") as file:
-			self.train_history = pickle.load(file)

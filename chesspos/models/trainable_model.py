@@ -1,10 +1,12 @@
 from functools import wraps
+from typing import Callable, Dict, List, overload
 import os
 import math
 import pickle
-from typing import Callable, Dict, List, overload
 import numpy as np
+import matplotlib.pyplot as plt
 import chess
+
 
 import tensorflow as tf
 from tensorflow import keras
@@ -41,7 +43,6 @@ class TrainableModel(SaveableModel):
 		self.train_steps_per_epoch = train_steps_per_epoch
 		self.test_steps_per_epoch = test_steps_per_epoch
 		self.hide_tf_warnings = hide_tf_warnings
-		self.train_history = None
 
 		super(TrainableModel, self).__init__(**kwargs)
 
@@ -64,7 +65,7 @@ class TrainableModel(SaveableModel):
 				elif isinstance(callback, str):
 					if callback == 'early_stopping':
 						callbacks.append(
-							keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0.05, patience=10,
+							keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0.02, patience=10,
 							verbose=0, mode='min', restore_best_weights=True)
 						)
 					elif callback == 'checkpoints':
@@ -120,14 +121,24 @@ class TrainableModel(SaveableModel):
 			if test_epochs > self.EXCESS_VALIDATION_EPOCHS + train_epochs:
 				print("WARNING: your are providing much more validation samples than necessary. Those could be used for training instead.")
 
+	def _plot_train_history(self, history: keras.History) -> None:
+		# summarize history for loss
+		plt.plot(history.history['loss'])
+		plt.plot(history.history['val_loss'])
+		plt.title('model loss')
+		plt.ylabel('loss')
+		plt.xlabel('epoch')
+		plt.legend(['train', 'test'], loc='upper left')
+		plt.savefig(self.save_dir+'/loss.png')
 
 	def train(self) -> Dict:
 		if self.hide_tf_warnings:
 			os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
+		# TODO: benchmark
 		#train_generator = self.train_generator.get_generator()
-		train_generator = self.train_generator.get_tf_dataset()
 		#test_generator = self.test_generator.get_generator()
+		train_generator = self.train_generator.get_tf_dataset()
 		test_generator = self.test_generator.get_tf_dataset()
 
 		self._check_train_test_ratio()
@@ -140,9 +151,7 @@ class TrainableModel(SaveableModel):
 			validation_steps = self.test_steps_per_epoch,
 			callbacks = self.tf_callbacks
 		)
-		self.train_history = history.history
-
-		return self.train_history
+		return history
 
 	def predict(self, samples: np.ndarray) -> np.ndarray:
 		return self.model.predict(samples)

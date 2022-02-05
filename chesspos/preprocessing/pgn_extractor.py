@@ -1,5 +1,5 @@
 import logging
-from typing import Callable
+from typing import Callable, List
 from attrs import define, field
 
 import numpy as np
@@ -23,6 +23,8 @@ class PgnExtractor():
 	_encoding_counter: int = field(init=False, default=0)
 	_encoding_shape: np.ndarray = field(init=False)
 	_encoding_type: np.dtype = field(init=False)
+	_discarded_games: int = 0
+	_processed_games: int = 0
 	
 	@_logger.default
 	def _get_default_logger(self):
@@ -76,12 +78,13 @@ class PgnExtractor():
 					self._logger.info(f"Processed {self._game_counter} games in total")
 					yield None
 				elif self.game_filter(header):
-					self._logger.info(f"Game {self._game_counter} discarded")
+					self._discarded_games += 1
 					continue
 				elif self._game_counter >= number_games:
 					self._logger.info(f"Processed {self._game_counter} games in total")
 					yield None
 				else:
+					self._processed_games += 1
 					yield chess.pgn.read_game(pgn_file)
 
 	def extract(self, number_games: int = int(1e18)):
@@ -99,7 +102,7 @@ class PgnExtractor():
 			encodings = self.game_processor(game)
 			# Edge case: chunksize reached
 			number_encodings = min(encodings.shape[0], self.chunk_size - self._encoding_counter)
-			self._logger.info(f"Extracted {number_encodings} encodings from game {self._game_counter}")
+			#self._logger.info(f"Extracted {number_encodings} encodings from game {self._game_counter}")
 			new_encoding_counter = self._encoding_counter + number_encodings
 			encoding_chunk[self._encoding_counter:new_encoding_counter, ...] = encodings[:number_encodings, ...]
 			game_id[self._encoding_counter:new_encoding_counter] = self._game_counter*np.ones(number_encodings, dtype=np.int32)
@@ -107,6 +110,10 @@ class PgnExtractor():
 
 			# Save chunk if it is full
 			if self._encoding_counter == self.chunk_size:
+				self._logger.info(f"Processed {self._processed_games} games in this chunk")
+				self._logger.info(f"Filtered {self._discarded_games} games in this chunk")
+				self._processed_games = 0
+				self._discarded_games = 0
 				self._write_chunk_to_file(encoding_chunk, game_id)
 		
 		# Log file headers

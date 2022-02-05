@@ -16,7 +16,7 @@ class SampleGenerator():
 		batch_size=16,
 		sample_type=np.float32,
 	):
-		self.H5_COL_KEY = 'position'
+		self.H5_COL_KEY = 'encoding'
 		self.sample_dir = sample_dir
 		self.sample_preprocessor = sample_preprocessor
 		self.batch_size = batch_size

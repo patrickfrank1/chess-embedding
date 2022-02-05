@@ -78,8 +78,9 @@ def board_to_tensor(board):
 
 	return embedding
 
-def tensor_to_board(tensor):
-	assert tensor.shape == (8,8,15)
+def tensor_to_board(tensor, threshold=0.5):
+	assert tensor.shape == (8,8,15), f"tensor_to_board encounterer an input with invalid shape {tensor.shape}, expected shape (8,8,15)"
+	tensor = np.where(tensor > threshold, 1, 0)
 
 	# set up empty board
 	reconstructed_board = chess.Board()

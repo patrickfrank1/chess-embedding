@@ -4,7 +4,7 @@ setup(
 	name='chesspos',
 	version='0.1.3',
 	description='A library for manipulating, learning and searching chess positions',
-	url='https://github.com/patrickfrank1/chesspos/',
+	url='https://github.com/patrickfrank1/chess-embedding/',
 	author='Patrick Frank',
 	author_email='patrickfrank1@outlook.com',
 	license='GPLv3',

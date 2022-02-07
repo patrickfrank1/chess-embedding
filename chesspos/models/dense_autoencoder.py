@@ -9,7 +9,6 @@ from chesspos.models.autoencoder import AutoencoderModel
 class DenseAutoencoder(AutoencoderModel):
 	@wraps(AutoencoderModel.__init__)
 	def __init__(self, **kwargs):
-		self._final_conv_shape = None
 		self.embedding_size = 256
 		super().__init__(**kwargs)
 

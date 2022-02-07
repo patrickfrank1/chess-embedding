@@ -42,12 +42,6 @@ class AutoencoderModel(TrainableModel):
 	def _define_decoder(self) -> Model:
 		pass
 
-	def _define_model(self) -> Model:
-		encoder = self._define_encoder()
-		decoder = self._define_decoder()
-		autoencoder = decoder(encoder)
-		return keras.Model(inputs=encoder.get_layer(index=0).input, outputs=autoencoder, name="autoencoder")
-
 	def get_encoder(self):
 		return self.encoder
 

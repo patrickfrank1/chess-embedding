@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from functools import wraps
 from typing import Callable, Dict, List, overload
 import os
@@ -48,6 +49,10 @@ class TrainableModel(SaveableModel):
 
 		self.tf_callbacks = self._set_tf_callbacks(tf_callbacks)
 		print(self.loss)
+
+	@abstractmethod
+	def _define_model(self) -> keras.Model:
+		pass
 
 	def _set_tf_callbacks(self, callback_array) -> List[keras.callbacks.Callback]:
 		callbacks = []

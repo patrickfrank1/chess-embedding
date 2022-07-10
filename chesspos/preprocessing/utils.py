@@ -36,7 +36,6 @@ def samples_generator_from_file(file, table_id_prefix, dtype=np.float32):
 	fname = correct_file_ending(file, 'h5')
 	samples = []
 	with h5py.File(fname, 'r') as hf:
-		print(f"keys in {fname}: {hf.keys()}")
 		for key in hf.keys():
 			if table_id_prefix in key:
 				yield np.asarray(hf[key][:], dtype=dtype)

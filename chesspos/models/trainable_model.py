@@ -65,7 +65,7 @@ class TrainableModel(SaveableModel):
 							save_weights_only=False, save_best_only=True, mode='min', verbose=1)
 						)
 					else:
-						print(f"WARNING: illegal arguent {callback} in tf_callbacks, skipping.")
+						print(f"WARNING: illegal argument {callback} in tf_callbacks, skipping.")
 		else:
 			raise ValueError("'callback_array' needs to be a list.")
 
@@ -73,11 +73,11 @@ class TrainableModel(SaveableModel):
 
 
 	def _train_samples(self):
-		return  1.0 * self.train_generator.number_samples() * len(self.train_generator.subsampling_functions)
+		return  1.0 * self.train_generator.number_samples
 
 
 	def _test_samples(self):
-		return 1.0 * self.test_generator.number_samples() * len(self.test_generator.subsampling_functions)
+		return 1.0 * self.test_generator.number_samples
 
 
 	def _train_epochs(self):
@@ -106,15 +106,15 @@ class TrainableModel(SaveableModel):
 	def _check_train_test_ratio(self):
 		train_epochs = self._train_epochs()
 		test_epochs = self._test_epochs()
-		print(f'You have enough training samples for {train_epochs} epochs and enought validation samples for {test_epochs} epochs.')
+		print(f'You have enough training samples for {train_epochs} epochs and enough validation samples for {test_epochs} epochs.')
 
 		if train_epochs > test_epochs:
-			raise ValueError("Not enought validation samples provided to start training! Cancelling.")
+			raise ValueError("Not enough validation samples provided to start training! Cancelling.")
 		else:
 			print(f"\nTraining on {self._train_samples() / 1.e6} million training samples.")
 			print(f"Validating on {math.floor(train_epochs) * self.test_generator.batch_size * self.test_steps_per_epoch / 1.e6} million validation samples.")
 			if test_epochs > self.EXCESS_VALIDATION_EPOCHS + train_epochs:
-				print("WARNING: your are providing much more validation samples than nessecary. Those could be used for training instead.")
+				print("WARNING: your are providing much more validation samples than necessary. Those could be used for training instead.")
 
 
 	def train(self):

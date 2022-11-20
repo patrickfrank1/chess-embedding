@@ -1,6 +1,6 @@
 import chess
 
-from chesspos.preprocessing.board_converter import (
+from chesspos.preprocessing.position_processors import (
 	board_to_bitboard, bitboard_to_board, board_to_tensor, tensor_to_board
 )
 

@@ -1,7 +1,7 @@
 import chess
 import numpy as np
 
-def board_to_bitboard(board):
+def board_to_bitboard(board: chess.Board) -> np.ndarray:
 	embedding = np.array([], dtype=bool)
 	for color in [1, 0]:
 		for i in range(1, 7): # P N B R Q K / white
@@ -19,7 +19,7 @@ def board_to_bitboard(board):
 	embedding = np.concatenate((embedding, additional))
 	return embedding
 
-def bitboard_to_board(bb):
+def bitboard_to_board(bb: np.ndarray) -> chess.Board:
 	assert bb.shape == (773,)
 
 	# set up empty board
@@ -45,10 +45,9 @@ def bitboard_to_board(bb):
 	if bb[771]: castling_rights += 'q'
 	if bb[772]: castling_rights += 'k'
 	reconstructed_board.set_castling_fen(castling_rights)
-
 	return reconstructed_board
 
-def board_to_tensor(board):
+def board_to_tensor(board: chess.Board) -> np.ndarray:
 	embedding = np.empty((8,8,15), dtype=bool)
 	# one plane per piece
 	for color in [1, 0]:
@@ -75,10 +74,9 @@ def board_to_tensor(board):
 
 	# turn at plane embedding(:,:,14)
 	embedding[0,0,14] = board.turn
-
 	return embedding
 
-def tensor_to_board(tensor, threshold=0.5):
+def tensor_to_board(tensor: np.ndarray, threshold: float = 0.5) -> chess.Board:
 	assert tensor.shape == (8,8,15), f"tensor_to_board encounterer an input with invalid shape {tensor.shape}, expected shape (8,8,15)"
 	tensor = np.where(tensor > threshold, 1, 0)
 
@@ -111,5 +109,12 @@ def tensor_to_board(tensor, threshold=0.5):
 
 	# set turn
 	reconstructed_board.turn = tensor[0,0,14]
+	return reconstructed_board
 
-	return reconstructed_board			
+def encodings_to_tensor_triplets(encodings: np.ndarray) -> np.ndarray:
+	number_encodings = encodings.shape[0]
+	anchor_index = np.random.randint(number_encodings-1)
+	positive_index = anchor_index + 1
+	negative_index = min((anchor_index + number_encodings // 2), number_encodings)
+	triplets = encodings[[anchor_index, positive_index, negative_index],...]
+	return triplets.reshape(1, 3, *encodings.shape[1:])

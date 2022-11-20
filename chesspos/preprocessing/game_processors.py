@@ -1,53 +1,38 @@
 import logging
-from typing import Callable, Union
+import custom_types
 
 import chess
 import chess.pgn
 import numpy as np
+from pydantic import BaseModel
 
-from chesspos.preprocessing.board_converter import board_to_bitboard, board_to_tensor
 
-def sparse_positions_to_tensor(game: chess.pgn.Game):
-	return single_positions(game, board_to_tensor, heavy_subsampling)
+class GameProcessor(BaseModel):
+	is_process_position: custom_types.PositionFilter
+	position_processor: custom_types.PositionProcessor
+	position_aggregator: custom_types.PositionAggregator = lambda x: x
+	_logger: logging.Logger = logging.getLogger(__name__)
+	_board: chess.Board = chess.Board()
+	_encodings: list[np.ndarray] = []
+	
+	def __call__(self, game: chess.pgn.Game) -> np.ndarray:
+		return self.game_processor(game)
 
-def positions_to_tensor(game: chess.pgn.Game):
-	return single_positions(game, board_to_tensor, subsample_opening_positions)
-
-def positions_to_bitboard(game: chess.pgn.Game):
-	return single_positions(game, board_to_bitboard, subsample_opening_positions)
-
-def positions_to_tensor_triplets(game: chess.pgn.Game) -> np.ndarray:
-	position_encodings = single_positions(game, board_to_tensor, subsample_opening_positions)
-	number_positions = position_encodings.shape[0]
-	anchor_index = np.random.randint(number_positions-1)
-	positive_index = anchor_index + 1
-	negative_index = (anchor_index + number_positions // 2) % number_positions
-	triplets = position_encodings[[anchor_index, positive_index, negative_index],...]
-	return triplets.reshape(1, 3, *position_encodings.shape[1:])
-
-def single_positions(game: chess.pgn.Game, position_encoder: Callable[[chess.Board], np.ndarray],
-	sample_move: Callable[[Union[int,chess.Move, None]], bool]) -> np.ndarray:
-	logger = logging.getLogger(__name__)
-	output_shape = position_encoder(chess.Board()).shape
-	output_type = position_encoder(chess.Board()).dtype
-	output = np.empty((0, *output_shape), dtype=output_type)
-
-	board = chess.Board()
-	for i, move in enumerate(game.mainline_moves()):
+	def _push_move(self, move: chess.Move, move_nr: int = -1) -> None:
+		"""Push a move to the board and append the position to the list of positions"""
 		try:
-			board.push(move)
+			self._board.push(move)
 		except Exception as e:
-			logger.error(f"Exception occurred in position number {i}", exec_info=True)
-			return output
+			self._logger.error(f"Exception occurred in position number {move_nr}", exec_info=True)
+			return self._encodings
 
-		if sample_move(i):
-			output = np.append(output, position_encoder(board).reshape(1,*output_shape), axis=0)
-	return output
+	def game_processor(self, game: chess.pgn.Game) -> np.ndarray:
+		"""Process a game and return a numpy array of the processed positions"""
+		for i, move in enumerate(game.mainline()):
+			self._push_move(move, i)
+			if self.is_process_position(self._board):
+				encoding = self.position_processor(self._board)
+				self._encodings.append(encoding)
+		aggregated_encodings = self.position_aggregator(np.array(self._encodings))
+		return aggregated_encodings
 
-def subsample_opening_positions(ply: int) -> bool:
-	selection_probability = min(ply / 40, 1.0)
-	return np.random.random() < selection_probability
-
-def heavy_subsampling(ply: int):
-	selection_probability = subsample_opening_positions(ply) / 50.0
-	return np.random.random() < selection_probability

@@ -1,17 +1,22 @@
 import logging
-import custom_types
+import chesspos.custom_types as ct
 
 import chess
 import chess.pgn
 import numpy as np
 from pydantic import BaseModel
 
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+	level=logging.ERROR,
+	format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+	filename="pgn_extract.log"
+)
 
 class GameProcessor(BaseModel):
-	is_process_position: custom_types.PositionFilter
-	position_processor: custom_types.PositionProcessor
-	position_aggregator: custom_types.PositionAggregator = lambda x: x
-	_logger: logging.Logger = logging.getLogger(__name__)
+	is_process_position: ct.PositionFilter
+	position_processor: ct.PositionProcessor
+	position_aggregator: ct.PositionAggregator = lambda x: x
 	_board: chess.Board = chess.Board()
 	_encodings: list[np.ndarray] = []
 	
@@ -23,7 +28,7 @@ class GameProcessor(BaseModel):
 		try:
 			self._board.push(move)
 		except Exception as e:
-			self._logger.error(f"Exception occurred in position number {move_nr}", exec_info=True)
+			logger.error(f"Exception occurred in position number {move_nr}")
 			return self._encodings
 
 	def game_processor(self, game: chess.pgn.Game) -> np.ndarray:

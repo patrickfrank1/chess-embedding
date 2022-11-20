@@ -26,6 +26,8 @@ chess = "^1.9.3"
 h5py = "^3.7.0"
 matplotlib = "^3.6.2"
 colorama = "^0.4.6"
+attrs = "^22.1.0"
+pydantic = "^1.10.2"
 
 [tool.poetry.dev-dependencies]
 ipykernel = "^6.17.1"

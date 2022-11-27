@@ -4,7 +4,7 @@ from typing import Callable, List, Tuple
 import numpy as np
 import tensorflow as tf
 
-from chesspos.utils.utils import correct_file_ending, files_from_directory
+from chesspos.utils.file_utils import correct_file_ending, files_from_directory
 from chesspos.preprocessing.utils import sample_generator_from_file_array
 
 

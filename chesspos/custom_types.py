@@ -1,4 +1,4 @@
-from typing import TypeVar, Callable, Tuple
+from typing import TypeVar, Callable
 
 import numpy as np
 from chess import Board

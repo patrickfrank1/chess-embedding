@@ -5,7 +5,7 @@ import h5py
 import numpy as np
 import chess
 
-from chesspos.utils.utils import correct_file_ending
+from chesspos.utils.file_utils import correct_file_ending
 
 def samples_from_file(file, table_id_prefix, dtype=np.float32):
 	'''

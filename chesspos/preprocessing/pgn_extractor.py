@@ -9,7 +9,7 @@ import chess.pgn
 
 import chesspos.custom_types as ct
 from chesspos.preprocessing.game_processors import GameProcessor
-from chesspos.utils.utils import correct_file_ending
+from chesspos.utils.file_utils import correct_file_ending
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(

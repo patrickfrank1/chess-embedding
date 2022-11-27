@@ -782,6 +782,17 @@ python-versions = ">=3.6"
 plugins = ["importlib-metadata"]
 
 [[package]]
+name = "pyinstrument"
+version = "4.4.0"
+description = "Call stack profiler for Python. Shows you why your code is slow!"
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+
+[package.extras]
+jupyter = ["ipython"]
+
+[[package]]
 name = "pyparsing"
 version = "3.0.9"
 description = "pyparsing module - Classes and methods to define and execute parsing grammars"
@@ -1131,7 +1142,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "flake8 (<5)", "pytest-co
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "31d98d84459f34c1d8a174a4dfe8b36f58f523f7638dd6230a67db3b6dd92a0f"
+content-hash = "44778d53da2d0419823a3ab8c9c114f8dbda2ba720bf9fd3664da2d2365f2069"
 
 [metadata.files]
 absl-py = []
@@ -1203,6 +1214,7 @@ pyasn1-modules = []
 pycparser = []
 pydantic = []
 pygments = []
+pyinstrument = []
 pyparsing = []
 pytest = []
 python-dateutil = []

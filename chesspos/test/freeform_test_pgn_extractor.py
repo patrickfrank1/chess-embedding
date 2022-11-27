@@ -7,8 +7,6 @@ import chesspos.preprocessing.position_filters as pf
 import chesspos.preprocessing.position_processors as pp
 import chesspos.custom_types as ct
 
-import chesspos.utils.decorators as decorators
-
 # %%
 game_processor = gp.GameProcessor(
     is_process_position=pf.filter_piece_count(min_pieces=2, max_pieces=4),
@@ -29,5 +27,12 @@ pgn_extractor
 # %%
 pgn_extractor._encoding_shape, pgn_extractor._encoding_type, pgn_extractor._game_counter
 
+from pyinstrument import Profiler
+
+profiler = Profiler()
+profiler.start()
 
 pgn_extractor.extract(10_000)
+
+profiler.stop()
+profiler.print()

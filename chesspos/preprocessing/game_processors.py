@@ -1,17 +1,18 @@
-from dataclasses import dataclass
 import logging
-import chesspos.custom_types as ct
-
-import chess
-import chess.pgn
-import numpy as np
-
 logger = logging.getLogger(__name__)
 logging.basicConfig(
 	level=logging.ERROR,
 	format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 	filename="pgn_extract.log"
 )
+
+from dataclasses import dataclass
+
+import chess
+import chess.pgn
+import numpy as np
+
+import chesspos.custom_types as ct
 
 
 @dataclass
@@ -48,7 +49,6 @@ class GameProcessor():
 	def get_sample_encoding(self) -> np.ndarray:
 		"""Process a game and return a dummy encoding, to get its shape and dtype"""
 		board: chess.Board = chess.Board()
-		move = chess.Move.from_uci("e2e4")
 		encoding = self.position_processor(board)
 		return np.empty((0, *encoding.shape), dtype=encoding.dtype)
 

@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import logging
 from typing import Tuple
 
@@ -5,9 +6,9 @@ import numpy as np
 import h5py
 import chess
 import chess.pgn
-from pydantic import BaseModel
 
 import chesspos.custom_types as ct
+from chesspos.preprocessing.game_processors import GameProcessor
 from chesspos.utils.utils import correct_file_ending
 
 logger = logging.getLogger(__name__)
@@ -17,28 +18,24 @@ logging.basicConfig(
 	filename="pgn_extract.log"
 )
 
-class PgnExtractor(BaseModel):
+@dataclass
+class PgnExtractor():
 	pgn_path: str
 	save_path: str
 	is_process_game: ct.GameFilter
-	game_processor: ct.GameProcessor
+	game_processor: GameProcessor | ct.GameProcessor
 	chunk_size: int = 100000
-	log_level: int = logging.ERROR
 	_game_counter: int = 0
 	_chunk_counter: int = 0
 	_encoding_counter: int = 0
-	_encoding_shape: Tuple[int, ...]
-	_encoding_type: np.dtype
+	_encoding_shape: Tuple[int, ...] = None
+	_encoding_type: np.dtype = None
 	_discarded_games: int = 0
 	_processed_games: int = 0
 
-	# pydantic shortcoming: private underscore variables can not be validated using the @validator decorator
-	# https://github.com/pydantic/pydantic/issues/655
-	# so the default value needs to be set overwriting the __init__ method
-	def __init__(self, **kwargs):
-		super().__init__(**kwargs)
-		object.__setattr__(self, '_encoding_shape', self._get_encoding_shape())
-		object.__setattr__(self, '_encoding_type', self._get_encoding_type())
+	def __post_init__(self):
+		self._encoding_shape = self._get_encoding_shape()
+		self._encoding_type = self._get_encoding_type()
 
 	def _get_encoding_shape(self):
 		_, shape = self._get_encoding_type_and_shape()
@@ -49,11 +46,18 @@ class PgnExtractor(BaseModel):
 		return dtype 
 
 	def _get_encoding_type_and_shape(self):
-		with open(correct_file_ending(self.pgn_path, "pgn"), 'r') as f:
-			game = chess.pgn.read_game(f)
-			encoding = self.game_processor(game)
-			logger.info(f"Type of encoding: {encoding.dtype}, shape of encoding: {encoding.shape[1:]}")
-			return encoding.dtype, encoding.shape[1:]
+		if type(self.game_processor) is GameProcessor:
+			sample_encoding = self.game_processor.get_sample_encoding()
+			logger.info(f"Type of encoding: {sample_encoding.dtype}, shape of encoding: {sample_encoding.shape[1:]}")
+			return sample_encoding.dtype, sample_encoding.shape[1:]
+		elif type(self.game_processor) is ct.GameProcessor:
+			with open(correct_file_ending(self.pgn_path, "pgn"), 'r') as f:
+				game = chess.pgn.read_game(f)
+				encoding = self.game_processor(game)
+				logger.info(f"Type of encoding: {encoding.dtype}, shape of encoding: {encoding.shape[1:]}")
+				return encoding.dtype, encoding.shape[1:]
+		else:
+			raise TypeError(f"Type of game_processor must be GameProcessor or GameProcessor, not {type(self.game_processor)}")
 
 	def _write_chunk_to_file(self, chunk: np.ndarray, metadata: np.ndarray):
 		logger.info(f"Saving chunk {self._chunk_counter}")
@@ -81,7 +85,7 @@ class PgnExtractor(BaseModel):
 				if header is None:
 					logger.info(f"Processed {self._game_counter} games in total")
 					yield None
-				elif self.is_process_game(header):
+				elif not self.is_process_game(header):
 					self._discarded_games += 1
 					continue
 				elif self._game_counter >= number_games:

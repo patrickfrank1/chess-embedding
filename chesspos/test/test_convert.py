@@ -39,7 +39,3 @@ def test_full_tensor_conversion():
 	print(reconstructed_board.__str__())
 	assert ep_board_state == _get_board_state(reconstructed_board)
 	assert ep_board.board_fen() == reconstructed_board.board_fen()
-
-if __name__ == "__main__":
-	test_full_bitboard_conversion()
-	test_full_tensor_conversion()

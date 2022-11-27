@@ -1,10 +1,10 @@
+from dataclasses import dataclass
 import logging
 import chesspos.custom_types as ct
 
 import chess
 import chess.pgn
 import numpy as np
-from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -13,15 +13,19 @@ logging.basicConfig(
 	filename="pgn_extract.log"
 )
 
-class GameProcessor(BaseModel):
+
+@dataclass
+class GameProcessor():
 	is_process_position: ct.PositionFilter
 	position_processor: ct.PositionProcessor
-	position_aggregator: ct.PositionAggregator = lambda x: x
+	position_aggregator: ct.PositionAggregator = lambda position_encodings: position_encodings
 	_board: chess.Board = chess.Board()
-	_encodings: list[np.ndarray] = []
 	
 	def __call__(self, game: chess.pgn.Game) -> np.ndarray:
-		return self.game_processor(game)
+		self._board = chess.Board()
+		encodings = self.game_processor(game)
+		aggregated_encodings = self.position_aggregator(encodings)
+		return aggregated_encodings
 
 	def _push_move(self, move: chess.Move, move_nr: int = -1) -> None:
 		"""Push a move to the board and append the position to the list of positions"""
@@ -29,15 +33,22 @@ class GameProcessor(BaseModel):
 			self._board.push(move)
 		except Exception as e:
 			logger.error(f"Exception occurred in position number {move_nr}")
-			return self._encodings
+			raise Exception(e)
 
 	def game_processor(self, game: chess.pgn.Game) -> np.ndarray:
 		"""Process a game and return a numpy array of the processed positions"""
-		for i, move in enumerate(game.mainline()):
+		encodings = self.get_sample_encoding()
+		for i, move in enumerate(game.mainline_moves()):
 			self._push_move(move, i)
 			if self.is_process_position(self._board):
-				encoding = self.position_processor(self._board)
-				self._encodings.append(encoding)
-		aggregated_encodings = self.position_aggregator(np.array(self._encodings))
-		return aggregated_encodings
+				encoding = self.position_processor(self._board).reshape(1, -1)
+				encodings = np.append(encodings, encoding, axis=0)
+		return encodings
+
+	def get_sample_encoding(self) -> np.ndarray:
+		"""Process a game and return a dummy encoding, to get its shape and dtype"""
+		board: chess.Board = chess.Board()
+		move = chess.Move.from_uci("e2e4")
+		encoding = self.position_processor(board)
+		return np.empty((0, *encoding.shape), dtype=encoding.dtype)
 
